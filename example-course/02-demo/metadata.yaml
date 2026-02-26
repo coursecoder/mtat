@@ -1,0 +1,19 @@
+id: pe-fundamentals-02
+title: "Crafting Effective Prompts: Live Walkthrough"
+module_type: demo
+course_id: prompt-engineering-fundamentals
+version: "1.0"
+audience: general
+locale: en-US
+estimated_minutes: 20
+prerequisites:
+  - pe-fundamentals-01
+learning_objectives:
+  - Observe the iterative process of refining a prompt from vague to structured
+  - Apply the three-element framework to a real-world scenario
+  - Recognize how small wording changes produce meaningfully different outputs
+tags:
+  - prompt-engineering
+  - demo
+  - iteration
+last_updated: "2025-01-15"

@@ -1,0 +1,20 @@
+id: pe-fundamentals-03
+title: "Prompt Iteration Lab"
+module_type: exercise
+course_id: prompt-engineering-fundamentals
+version: "1.0"
+audience: general
+locale: en-US
+estimated_minutes: 30
+prerequisites:
+  - pe-fundamentals-01
+  - pe-fundamentals-02
+learning_objectives:
+  - Write an original prompt using the three-element framework
+  - Iterate a prompt at least twice based on output quality
+  - Articulate what changed between prompt versions and why
+tags:
+  - prompt-engineering
+  - hands-on
+  - iteration
+last_updated: "2025-01-15"

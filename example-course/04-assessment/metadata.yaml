@@ -1,0 +1,21 @@
+id: pe-fundamentals-04
+title: "Check for Understanding"
+module_type: assessment
+course_id: prompt-engineering-fundamentals
+version: "1.0"
+audience: general
+locale: en-US
+estimated_minutes: 10
+prerequisites:
+  - pe-fundamentals-01
+  - pe-fundamentals-02
+  - pe-fundamentals-03
+learning_objectives:
+  - Define prompt engineering and explain why it matters for teams deploying AI
+  - Distinguish between a vague prompt and a structured prompt
+  - Identify the three core elements of an effective prompt
+tags:
+  - prompt-engineering
+  - assessment
+  - fundamentals
+last_updated: "2025-01-15"
