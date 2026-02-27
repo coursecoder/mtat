@@ -28,7 +28,7 @@ services:
       retries: 10
 
   moodle:
-    image: bitnami/moodle:4.3
+    image: bitnami/moodle:latest
     container_name: mtat-moodle
     restart: unless-stopped
     ports:
