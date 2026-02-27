@@ -437,6 +437,7 @@ def group_by_course(entries: list[dict]) -> dict[str, dict]:
 
 
 def main():
+    global DEFAULT_USER, DEFAULT_PASS
     parser = argparse.ArgumentParser(
         description="Upload MTAT variants to a local Moodle instance."
     )
@@ -451,7 +452,6 @@ def main():
     args = parser.parse_args()
 
     # Patch module-level defaults so helper functions pick up CLI values
-    global DEFAULT_USER, DEFAULT_PASS
     DEFAULT_USER = args.user
     DEFAULT_PASS = args.password
 
