@@ -13,6 +13,7 @@ env/
 # Env
 .env
 .env.local
+.moodle-token
 
 # Generated variants (tracked via manifest.yaml, not committed individually)
 variants/*.md

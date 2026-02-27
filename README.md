@@ -89,6 +89,8 @@ mtat/
 ├── .gitignore
 │
 ├── generate-variant.py                # CLI tool: adapts any module for any audience
+├── upload-to-moodle.py                # CLI tool: uploads variants to local Moodle via Docker
+├── docker-compose.yml                 # Moodle + MariaDB stack for local LMS preview
 │
 ├── prompts/
 │   └── adapt.md                       # System prompt governing Claude's adaptation behavior
@@ -150,6 +152,89 @@ python3 generate-variant.py --module example-course/01-concept --audience develo
 ```
 
 Output is written to `variants/01-concept/developer-en-US.md`. The manifest is updated at `variants/manifest.yaml`.
+
+---
+
+## Previewing Variants in Moodle
+
+`upload-to-moodle.py` spins up a local [Moodle](https://moodle.org) LMS via Docker and uploads your generated variants as Page resources inside a course — one page per audience variant. This gives you a realistic learner view of how the content renders and reads in an actual LMS.
+
+### Prerequisites
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
+- Virtual env active with dependencies installed (see Quickstart step 1)
+- At least one set of generated variants in `variants/manifest.yaml`
+
+### Step 1 — Start Moodle
+
+```bash
+docker compose up -d
+```
+
+First run downloads ~1 GB of images and takes **2–3 minutes** to initialize. You can watch progress with:
+
+```bash
+docker compose logs -f moodle
+```
+
+Once ready, open **http://localhost:8080** — you should see the Moodle login page.
+
+| Credential | Value |
+|---|---|
+| Username | `admin` |
+| Password | `MoodleAdmin1!` |
+
+### Step 2 — Generate variants (if you haven't yet)
+
+```bash
+# Generate all four audience variants for the example concept module
+python generate-variant.py --module example-course/01-concept --audience developer
+python generate-variant.py --module example-course/01-concept --audience executive
+python generate-variant.py --module example-course/01-concept --audience champion
+python generate-variant.py --module example-course/01-concept --audience technical-writer
+```
+
+### Step 3 — Upload variants to Moodle
+
+On first run, the script enables the Moodle REST API via `docker exec` and caches the token locally:
+
+```bash
+python upload-to-moodle.py --setup-moodle
+```
+
+On subsequent runs (token already cached):
+
+```bash
+python upload-to-moodle.py
+```
+
+To upload only one course's variants:
+
+```bash
+python upload-to-moodle.py --course-id prompt-engineering-fundamentals
+```
+
+### Step 4 — View variants in Moodle
+
+1. Go to **http://localhost:8080/my/courses.php**
+2. Open the course that matches your `course_id` (e.g., "Prompt Engineering Fundamentals")
+3. Each audience variant appears as a Page resource: `Module Title [developer / en-US]`, `Module Title [executive / en-US]`, etc.
+4. Click through each to compare how the same learning objective reads for different audiences
+
+### Managing the Moodle instance
+
+```bash
+# Stop (data is preserved in Docker volumes)
+docker compose stop
+
+# Restart
+docker compose start
+
+# Wipe everything and start fresh
+docker compose down -v
+```
+
+> The `.moodle-token` file (gitignored) caches your API token locally. Delete it to force re-authentication.
 
 ---
 
@@ -276,4 +361,4 @@ Pipe `base.md` content to Claude with the rubric from `RUBRIC.md` before accepti
 
 ### Connect to an LMS
 
-The `variants/manifest.yaml` is designed to be machine-readable. A sync script can read the manifest, find variants newer than the LMS's last-known version, and push updated content to the platform's API. Each module's stable ID provides the mapping key.
+See [Previewing Variants in Moodle](#previewing-variants-in-moodle) for a full local Moodle setup. The `variants/manifest.yaml` is designed to be machine-readable. A sync script can read the manifest, find variants newer than the LMS's last-known version, and push updated content to the platform's API. Each module's stable ID provides the mapping key.
