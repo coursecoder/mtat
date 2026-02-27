@@ -119,9 +119,17 @@ mtat/
 
 ### 1. Install dependencies
 
+Create and activate a virtual environment, then install:
+
 ```bash
-pip3 install -r requirements.txt
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
+
+> On Windows: `.venv\Scripts\activate`
+>
+> You'll need to run `source .venv/bin/activate` at the start of each new terminal session before using the script.
 
 ### 2. Set your API key
 
