@@ -75,28 +75,6 @@ def api(url: str, token: str, function: str, **params) -> dict:
     return data
 
 
-def get_token(url: str, username: str, password: str) -> str:
-    """Authenticate and return a Moodle web-service token."""
-    resp = requests.get(
-        f"{url}/login/token.php",
-        params={
-            "username": username,
-            "password": password,
-            "service": "mtat_upload",
-        },
-        timeout=30,
-    )
-    resp.raise_for_status()
-    data = resp.json()
-    if "token" not in data:
-        raise RuntimeError(
-            f"Could not get token: {data.get('error', data)}\n"
-            "Make sure the 'mtat_upload' external service is enabled in Moodle.\n"
-            "Run:  python upload-to-moodle.py --setup-moodle"
-        )
-    return data["token"]
-
-
 # ---------------------------------------------------------------------------
 # First-time Moodle setup via docker exec
 # ---------------------------------------------------------------------------
@@ -265,53 +243,18 @@ def strip_front_matter(text: str) -> str:
     return text
 
 
-def add_book_chapter(
-    url: str, token: str, cmid: int, title: str, html_content: str, chapter_num: int
-):
-    """
-    Add a chapter to a Moodle Book via the web API.
-    Falls back to direct DB insert via docker exec if the add function isn't
-    available in the external service (older Moodle versions restrict it).
-    """
-    try:
-        api(url, token, "mod_book_add_chapter",
-            **{
-                "bookid": cmid,
-                "chapters[0][title]": title,
-                "chapters[0][content]": html_content,
-                "chapters[0][contentformat]": 1,
-                "chapters[0][subchapter]": 0,
-                "chapters[0][pagenum]": chapter_num,
-            })
-    except RuntimeError:
-        # mod_book_add_chapter may not exist in all Moodle versions.
-        # Instruct user to add chapters manually.
-        print(f"    [!] mod_book_add_chapter not available — chapter '{title}' must be added manually.")
-
-
 def upload_variants_to_book(
     url: str,
     token: str,
     course_moodle_id: int,
-    module_id: str,
     module_title: str,
     variants: list[dict],
     manifest_dir: Path,
 ):
     """
-    For a given module, create (or find) a Book activity in the course,
-    then add one chapter per audience variant.
-    Uses Moodle's course contents API to find the book cmid, then
-    instructs via print what the script accomplished.
+    For a given module, upload one Page resource per audience variant into the course.
     """
-    book_name = f"{module_title} — All Variants"
     print(f"\n  Module: {module_title} ({len(variants)} variants)")
-
-    # Moodle's REST API doesn't expose mod_book_add_book, so we create the
-    # book resource via core_course_edit_module which also isn't universally
-    # available. We use the approach of printing direct URLs and HTML content
-    # for the user, since Moodle's API surface for Book creation is limited.
-    # Instead we upload the full HTML to a single Page resource per variant.
 
     for i, variant in enumerate(variants, start=1):
         variant_path = manifest_dir / variant["output_file"]
@@ -327,28 +270,14 @@ def upload_variants_to_book(
         locale = variant.get("locale", "en-US")
         page_title = f"{module_title} [{audience} / {locale}]"
 
-        # Create a Page resource in the course for this variant
-        try:
-            result = api(
-                url, token, "core_course_edit_module",
-                **{
-                    "action": "stealth",
-                    "id": course_moodle_id,
-                }
-            )
-        except Exception:
-            pass  # Not all versions support this
-
-        # Use the reliable approach: create via direct REST call to
-        # Moodle's internal endpoint using an authenticated session
-        _create_page_resource(url, token, course_moodle_id, page_title, html)
+        _create_page_resource(url, course_moodle_id, page_title, html, DEFAULT_USER, DEFAULT_PASS)
         print(f"    + Uploaded: {page_title}")
 
     print(f"  Done. Open your course at: {url}/course/view.php?id={course_moodle_id}")
 
 
 def _create_page_resource(
-    url: str, token: str, course_id: int, title: str, html_content: str
+    url: str, course_id: int, title: str, html_content: str, username: str, password: str
 ):
     """
     Create a Moodle Page resource via a session-authenticated form POST.
@@ -365,8 +294,8 @@ def _create_page_resource(
     session.post(
         f"{url}/login/index.php",
         data={
-            "username": DEFAULT_USER,
-            "password": DEFAULT_PASS,
+            "username": username,
+            "password": password,
             "logintoken": logintoken,
         },
         timeout=10,
@@ -515,7 +444,7 @@ def main():
 
             upload_variants_to_book(
                 args.url, token, moodle_course_id,
-                module_id, module_title, variants, manifest_dir,
+                module_title, variants, manifest_dir,
             )
 
     print("\nAll done.")

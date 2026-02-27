@@ -225,6 +225,7 @@ def generate_variant(
     update_manifest(manifest_path, {
         "module_id": metadata.get("id", "unknown"),
         "module_path": str(module_path),
+        "course_id": metadata.get("course_id", "mtat-preview"),
         "audience": audience,
         "locale": locale,
         "output_file": str(output_file),
