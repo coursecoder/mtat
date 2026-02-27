@@ -171,7 +171,7 @@ Output is written to `variants/01-concept/developer-en-US.md`. The manifest is u
 docker compose up -d
 ```
 
-First run downloads ~600 MB of images. Watch progress with:
+First run builds a custom Moodle image (downloads the base PHP/Apache image and Moodle 4.3 source from GitHub — expect 5–10 minutes and several hundred MB). Watch progress with:
 
 ```bash
 docker compose logs -f moodle
@@ -191,7 +191,7 @@ Once you see Apache log lines, open **http://localhost:8080** — you'll land on
    | Database user | `moodle` |
    | Database password | `moodlepassword` |
 4. Accept the license, let it run the environment checks, then install
-5. Create the admin account — use whatever username/password you like (note it down for `--token` or `--setup-moodle` later)
+5. Create the admin account — use whatever username/password you like (note it down — you'll need it for `--password` when uploading variants)
 6. Set the site name to anything (e.g., `MTAT Preview`) and finish
 
 After the installer completes you'll be logged in as admin.
@@ -200,31 +200,33 @@ After the installer completes you'll be logged in as admin.
 
 ```bash
 # Generate all four audience variants for the example concept module
-python generate-variant.py --module example-course/01-concept --audience developer
-python generate-variant.py --module example-course/01-concept --audience executive
-python generate-variant.py --module example-course/01-concept --audience champion
-python generate-variant.py --module example-course/01-concept --audience technical-writer
+python3 generate-variant.py --module example-course/01-concept --audience developer
+python3 generate-variant.py --module example-course/01-concept --audience executive
+python3 generate-variant.py --module example-course/01-concept --audience champion
+python3 generate-variant.py --module example-course/01-concept --audience technical-writer
 ```
 
 ### Step 3 — Upload variants to Moodle
 
-On first run, the script enables the Moodle REST API via `docker exec` and caches the token locally:
+On first run, the script enables the Moodle REST API via `docker exec` and caches the token locally. Pass the admin password you set during the installer:
 
 ```bash
-python upload-to-moodle.py --setup-moodle
+python3 upload-to-moodle.py --setup-moodle --password <your-admin-password>
 ```
 
 On subsequent runs (token already cached):
 
 ```bash
-python upload-to-moodle.py
+python3 upload-to-moodle.py --password <your-admin-password>
 ```
 
 To upload only one course's variants:
 
 ```bash
-python upload-to-moodle.py --course-id prompt-engineering-fundamentals
+python3 upload-to-moodle.py --password <your-admin-password> --course-id prompt-engineering-fundamentals
 ```
+
+> You can also set the password via environment variable to avoid typing it each time: `export MOODLE_ADMIN_PASS=<your-admin-password>`
 
 ### Step 4 — View variants in Moodle
 
