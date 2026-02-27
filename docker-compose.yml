@@ -33,7 +33,7 @@ services:
       retries: 10
 
   moodle:
-    image: moodlehq/moodle-php-apache:8.2
+    build: .
     container_name: mtat-moodle
     restart: unless-stopped
     ports:
