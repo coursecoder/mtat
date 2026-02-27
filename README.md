@@ -171,18 +171,30 @@ Output is written to `variants/01-concept/developer-en-US.md`. The manifest is u
 docker compose up -d
 ```
 
-First run downloads ~1 GB of images and takes **2–3 minutes** to initialize. You can watch progress with:
+First run downloads ~600 MB of images. Watch progress with:
 
 ```bash
 docker compose logs -f moodle
 ```
 
-Once ready, open **http://localhost:8080** — you should see the Moodle login page.
+Once you see Apache log lines, open **http://localhost:8080** — you'll land on the Moodle web installer.
 
-| Credential | Value |
-|---|---|
-| Username | `admin` |
-| Password | `MoodleAdmin1!` |
+**Complete the installer (one-time, ~3 minutes):**
+
+1. Confirm the detected paths and click **Next**
+2. Choose **MariaDB** as the database type
+3. Database settings — fill in exactly:
+   | Field | Value |
+   |---|---|
+   | Database host | `mariadb` |
+   | Database name | `moodle` |
+   | Database user | `moodle` |
+   | Database password | `moodlepassword` |
+4. Accept the license, let it run the environment checks, then install
+5. Create the admin account — use whatever username/password you like (note it down for `--token` or `--setup-moodle` later)
+6. Set the site name to anything (e.g., `MTAT Preview`) and finish
+
+After the installer completes you'll be logged in as admin.
 
 ### Step 2 — Generate variants (if you haven't yet)
 

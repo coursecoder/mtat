@@ -48,7 +48,7 @@ import yaml
 
 DEFAULT_URL = "http://localhost:8080"
 DEFAULT_USER = "admin"
-DEFAULT_PASS = "MoodleAdmin1!"
+DEFAULT_PASS = ""  # Set via --password flag or MOODLE_ADMIN_PASS env var
 TOKEN_CACHE_FILE = Path(".moodle-token")
 
 # ---------------------------------------------------------------------------
@@ -442,11 +442,18 @@ def main():
     )
     parser.add_argument("--url", default=DEFAULT_URL, help="Moodle base URL (default: http://localhost:8080)")
     parser.add_argument("--token", default=None, help="Moodle API token (skips auto-setup if provided)")
+    parser.add_argument("--user", default=DEFAULT_USER, help="Moodle admin username (default: admin)")
+    parser.add_argument("--password", default=os.environ.get("MOODLE_ADMIN_PASS", ""), help="Moodle admin password (or set MOODLE_ADMIN_PASS env var)")
     parser.add_argument("--course-id", default=None, help="Only upload variants for this course ID")
     parser.add_argument("--manifest", default="variants/manifest.yaml", help="Path to manifest.yaml")
     parser.add_argument("--setup-moodle", action="store_true", help="Run first-time Moodle web-services setup via docker exec")
     parser.add_argument("--get-token", action="store_true", help="Print the cached/generated token and exit")
     args = parser.parse_args()
+
+    # Patch module-level defaults so helper functions pick up CLI values
+    global DEFAULT_USER, DEFAULT_PASS
+    DEFAULT_USER = args.user
+    DEFAULT_PASS = args.password
 
     manifest_path = Path(args.manifest)
     manifest_dir = manifest_path.parent.parent  # project root
