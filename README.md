@@ -120,7 +120,7 @@ mtat/
 ### 1. Install dependencies
 
 ```bash
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
 ### 2. Set your API key
@@ -138,7 +138,7 @@ ANTHROPIC_API_KEY=your_key_here
 ### 3. Generate a variant
 
 ```bash
-python generate-variant.py --module example-course/01-concept --audience developer
+python3 generate-variant.py --module example-course/01-concept --audience developer
 ```
 
 Output is written to `variants/01-concept/developer-en-US.md`. The manifest is updated at `variants/manifest.yaml`.
@@ -148,7 +148,7 @@ Output is written to `variants/01-concept/developer-en-US.md`. The manifest is u
 ## CLI Reference
 
 ```
-python generate-variant.py [OPTIONS]
+python3 generate-variant.py [OPTIONS]
 
 Options:
   --module PATH       Path to the module directory. Required.
@@ -176,7 +176,7 @@ Options:
 Custom audiences are supported — pass any descriptive string and Claude will adapt accordingly:
 
 ```bash
-python generate-variant.py --module example-course/01-concept \
+python3 generate-variant.py --module example-course/01-concept \
   --audience "healthcare compliance officers with no prior AI experience"
 ```
 
@@ -185,7 +185,7 @@ python generate-variant.py --module example-course/01-concept \
 The `--locale` flag triggers full translation of all text content. Code blocks are preserved exactly; only inline comments and string values within code are translated.
 
 ```bash
-python generate-variant.py --module example-course/02-demo \
+python3 generate-variant.py --module example-course/02-demo \
   --audience developer --locale es-MX
 ```
 
@@ -199,7 +199,7 @@ python generate-variant.py --module example-course/02-demo \
 4. Score the module against `RUBRIC.md` before treating it as production-ready.
 5. Generate your first variants:
    ```bash
-   python generate-variant.py --module my-new-course/01-concept --audience developer
+   python3 generate-variant.py --module my-new-course/01-concept --audience developer
    ```
 
 ### metadata.yaml Template
