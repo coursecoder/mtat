@@ -18,6 +18,7 @@ Examples:
 """
 
 import argparse
+import hashlib
 import os
 import sys
 import yaml
@@ -71,7 +72,7 @@ AUDIENCE_PROFILES = {
     ),
 }
 
-MODEL = "claude-opus-4-6"
+MODEL = os.environ.get("MTAT_MODEL", "claude-opus-4-6")
 
 
 def load_module(module_path: Path) -> tuple[str, dict]:
@@ -92,18 +93,24 @@ def load_module(module_path: Path) -> tuple[str, dict]:
     return content, metadata
 
 
-def load_system_prompt() -> str:
-    """Load the versioned adaptation system prompt from prompts/adapt.md."""
+def load_system_prompt() -> tuple[str, str]:
+    """Load the versioned adaptation system prompt from prompts/adapt.md.
+
+    Returns a (content, sha256_hex) tuple. The hash is recorded in the manifest
+    so each variant is traceable to the exact prompt version that produced it.
+    """
     prompt_path = Path(__file__).parent / "prompts" / "adapt.md"
     if not prompt_path.exists():
         print("Warning: prompts/adapt.md not found. Using minimal fallback prompt.")
-        return (
+        fallback = (
             "You are a training content adaptation specialist. "
             "Adapt the provided module for the specified audience. "
             "Preserve structure, learning objectives, and module ID. "
             "Return only the adapted Markdown content."
         )
-    return prompt_path.read_text(encoding="utf-8")
+        return fallback, hashlib.sha256(fallback.encode()).hexdigest()
+    text = prompt_path.read_text(encoding="utf-8")
+    return text, hashlib.sha256(text.encode()).hexdigest()
 
 
 def build_user_message(content: str, metadata: dict, audience: str, locale: str) -> str:
@@ -183,7 +190,7 @@ def generate_variant(
 ) -> Path:
     """Core generation function. Returns the path of the written variant file."""
     content, metadata = load_module(module_path)
-    system_prompt = load_system_prompt()
+    system_prompt, prompt_hash = load_system_prompt()
     user_message = build_user_message(content, metadata, audience, locale)
 
     api_key = os.environ.get("ANTHROPIC_API_KEY")
@@ -194,7 +201,7 @@ def generate_variant(
         )
         sys.exit(1)
 
-    client = anthropic.Anthropic(api_key=api_key)
+    client = anthropic.Anthropic(api_key=api_key, max_retries=3)
 
     print(f"  Model : {MODEL}")
     print(f"  Module: {module_path}")
@@ -231,6 +238,7 @@ def generate_variant(
         "output_file": str(output_file),
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "model": MODEL,
+        "prompt_sha256": prompt_hash,
         "input_tokens": response.usage.input_tokens,
         "output_tokens": response.usage.output_tokens,
     })
