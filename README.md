@@ -1,5 +1,10 @@
 # MTAT — Modular Training Architecture Template
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Moodle%20LMS-c17b8e?style=for-the-badge)](http://18.190.241.69:8080/course/view.php?id=2)
+
+> **Try the live demo →** [http://18.190.241.69:8080/course/view.php?id=2](http://18.190.241.69:8080/course/view.php?id=2)
+> Click **"Log in as a guest"** on the login page to browse the course without creating an account.
+
 A content architecture for training courses designed to be maintained by one person and adapted by AI.
 
 MTAT separates training content into **atomic, typed modules** — concept, demo, exercise, assessment — so that a single base module can be AI-adapted into unlimited audience-specific variants without manual rework per variant. A CLI tool (`generate-variant.py`) drives the adaptation using Claude. A versioned system prompt (`prompts/adapt.md`) governs how Claude adapts content and what it must never change.
