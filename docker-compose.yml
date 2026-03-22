@@ -48,7 +48,7 @@ services:
       MOODLE_DB_NAME: moodle
       MOODLE_DB_USER: moodle
       MOODLE_DB_PASS: moodlepassword
-      MOODLE_WWWROOT: http://localhost:8080
+      MOODLE_WWWROOT: ${MOODLE_WWWROOT:-http://localhost:8080}
       MOODLE_DATAROOT: /var/moodledata
       APACHE_DOCUMENT_ROOT: /var/www/html
     volumes:
