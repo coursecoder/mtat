@@ -36,6 +36,7 @@ import re
 import subprocess
 import sys
 import time
+from urllib.parse import urljoin
 from pathlib import Path
 
 import markdown
@@ -294,11 +295,10 @@ def _create_page_resource(
 
     # Log in to get a session cookie
     login_page = session.get(f"{url}/login/index.php", timeout=10)
-    # Extract logintoken from the form
     match = re.search(r'name="logintoken" value="([^"]+)"', login_page.text)
     logintoken = match.group(1) if match else ""
 
-    session.post(
+    login_resp = session.post(
         f"{url}/login/index.php",
         data={
             "username": username,
@@ -309,34 +309,82 @@ def _create_page_resource(
         allow_redirects=True,
     )
 
-    # Get the "Add Page" form to extract sesskey and other hidden fields
+    # Verify login succeeded
+    if "loginerrormessage" in login_resp.text or "login/index.php" in login_resp.url:
+        raise RuntimeError(
+            f"Moodle login failed for user '{username}'. Check --password is correct."
+        )
+
+    # Get the "Add Page" form to extract sesskey
     add_page = session.get(
         f"{url}/course/modedit.php",
         params={"add": "page", "type": "", "course": course_id, "section": 0},
         timeout=10,
     )
     sesskey_match = re.search(r'"sesskey":"([^"]+)"', add_page.text)
+    if not sesskey_match:
+        sesskey_match = re.search(r'sesskey=([a-zA-Z0-9]+)', add_page.text)
+    if not sesskey_match:
+        sesskey_match = re.search(r'name="sesskey"\s+value="([^"]+)"', add_page.text)
     sesskey = sesskey_match.group(1) if sesskey_match else ""
 
-    # Submit the Page creation form
-    session.post(
-        f"{url}/course/modedit.php",
-        data={
-            "sesskey": sesskey,
-            "add": "page",
-            "course": course_id,
-            "section": 0,
-            "name": title,
-            "intro": "",
-            "introformat": 1,
-            "page[text]": html_content,
-            "page[format]": 1,
-            "submitbutton2": "Save and return to course",
-            "mform_isexpanded_id_generalhdr": 1,
-        },
+    # Extract the form action from the module edit form specifically
+    form_action_match = re.search(r'<form[^>]+id="mform1"[^>]+action="([^"]+)"', add_page.text)
+    if not form_action_match:
+        form_action_match = re.search(r'<form[^>]+action="([^"]*modedit[^"]*)"', add_page.text)
+    if not form_action_match:
+        form_action_match = re.search(r'<form[^>]+action="([^"]+)"[^>]*>.*?name="sesskey"', add_page.text, re.DOTALL)
+    form_action = form_action_match.group(1) if form_action_match else f"{url}/course/modedit.php"
+    form_action = urljoin(add_page.url, form_action.replace("&amp;", "&"))
+
+    # Extract all hidden input fields from the form
+    hidden_fields = dict(re.findall(r'<input[^>]+type="hidden"[^>]+name="([^"]+)"[^>]+value="([^"]*)"', add_page.text))
+    hidden_fields.update(dict(re.findall(r'<input[^>]+name="([^"]+)"[^>]+type="hidden"[^>]+value="([^"]*)"', add_page.text)))
+
+    if not sesskey:
+        raise RuntimeError(
+            f"Could not extract sesskey from Moodle form. "
+            f"Check that the course id={course_id} exists and the user has edit rights."
+        )
+
+    # Submit the Page creation form using all hidden fields as base
+    form_data = hidden_fields.copy()
+    form_data["_qf__mod_page_mod_form"] = "1"
+    form_data["availabilityconditionsjson"] = '{"op":"&","c":[],"showc":[]}'
+    form_data.update({
+        "sesskey": sesskey,
+        "add": "page",
+        "course": course_id,
+        "section": 0,
+        "name": title,
+        "intro": "",
+        "introeditor[text]": "",
+        "introeditor[format]": "1",
+        "introeditor[itemid]": hidden_fields.get("introeditor[itemid]", ""),
+        "showdescription": "0",
+        "page[text]": html_content,
+        "page[format]": "1",
+        "page[itemid]": hidden_fields.get("page[itemid]", ""),
+        "printintro": "0",
+        "printlastmodified": "1",
+        "display": "5",
+        "submitbutton2": "Save and return to course",
+    })
+    submit_resp = session.post(
+        form_action,
+        data=form_data,
         timeout=30,
         allow_redirects=True,
     )
+    # Check for Moodle-level errors in the response
+    error_match = re.search(r'class="[^"]*errormessage[^"]*"[^>]*>(.*?)<', submit_resp.text, re.DOTALL)
+    if not error_match:
+        error_match = re.search(r'<p[^>]*class="[^"]*error[^"]*"[^>]*>(.*?)</p>', submit_resp.text, re.DOTALL)
+    if error_match:
+        raise RuntimeError(f"Moodle error creating page '{title}': {error_match.group(1).strip()}")
+
+    if submit_resp.status_code != 200:
+        raise RuntimeError(f"Page creation POST returned HTTP {submit_resp.status_code} for '{title}'")
 
 
 # ---------------------------------------------------------------------------
