@@ -155,13 +155,20 @@ def setup_moodle_webservices(container: str = "mtat-moodle") -> str:
     # Write the PHP script to a temp file inside the container
     script_path = "/tmp/mtat_setup.php"
     try:
+        # Use sudo if docker is not accessible without it
+        docker_cmd = ["docker"]
+        try:
+            subprocess.run(["docker", "info"], check=True, capture_output=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            docker_cmd = ["sudo", "docker"]
+
         subprocess.run(
-            ["docker", "exec", container, "bash", "-c",
+            docker_cmd + ["exec", container, "bash", "-c",
              f"cat > {script_path} << 'PHPEOF'\n{MOODLE_CLI_SCRIPT}\nPHPEOF"],
             check=True, capture_output=True,
         )
         result = subprocess.run(
-            ["docker", "exec", container, "php", script_path],
+            docker_cmd + ["exec", container, "php", script_path],
             check=True, capture_output=True, text=True,
         )
         token = result.stdout.strip().splitlines()[-1]
